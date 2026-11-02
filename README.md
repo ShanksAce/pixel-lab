@@ -2,6 +2,8 @@
 
 線上展示：https://pixel-lab-yan-ting-142.yanruyu0608.chatgpt.site
 
+GitHub Pages：https://shanksace.github.io/pixel-lab/
+
 公開原始碼：https://github.com/ShanksAce/pixel-lab
 
 互動式影像處理與人臉分析期中專題。四大核心功能皆在瀏覽器執行，沒有圖片上傳 API，也不收集影像。

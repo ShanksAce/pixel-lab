@@ -30,3 +30,10 @@ Additional tests are appended as completed. Screenshots are captured from the li
 - No-face color chart, input320 / threshold0.70: 0 detections, 2417.8 ms.
 - Public Sites deployment succeeded; access set to Public; live page opens in separate in-app browser without a login page.
 - Native file picker automation was blocked by extension file URL access settings. This is recorded as a verification limitation, not reported as an end-to-end upload pass.
+
+## GitHub final verification
+
+Public source: https://github.com/ShanksAce/pixel-lab
+Numerical verification workflow: success (run 41409049740).
+GitHub Pages deployment workflow: success (run 41409049792).
+GitHub Pages: https://shanksace.github.io/pixel-lab/
