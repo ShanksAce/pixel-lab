@@ -32,7 +32,7 @@ npm start
 npm test
 ```
 
-12 項 Node.js 原生測試覆蓋已知數值、直方圖總量、非對稱卷積、邊界與防呆。
+17 項 Node.js 原生測試（15 項數值、2 項介面）覆蓋已知數值、直方圖總量、非對稱卷積、邊界與防呆。
 瀏覽器實測詳見 `docs/VALIDATION.md`。測試工具無額外套件。
 
 ## 檔案
@@ -68,4 +68,5 @@ face-api.js / 模型：https://github.com/justadudewhohacks/face-api.js （MIT�
 多人臉範例：同一專案 `examples/images/bbt1.jpg`，是影視畫面測試素材，僅供教學驗證；不宣稱擁有其影像著作權。
 自製色彩測試圖於程式中即時繪製。
 自撰程式以 MIT 授權，見 LICENSE。若改作商業用途，請改用有適當授權的測試照片。
+
 

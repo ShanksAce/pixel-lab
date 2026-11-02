@@ -37,3 +37,14 @@ Public source: https://github.com/ShanksAce/pixel-lab
 Numerical verification workflow: success (run 41409049740).
 GitHub Pages deployment workflow: success (run 41409049792).
 GitHub Pages: https://shanksace.github.io/pixel-lab/
+
+## Final rubric audit
+
+Re-read the assignment's core requirements, submission rules and rubric. Found and fixed a malformed R option opening tag and comma-separated missing weights. Final Node tests: 17/17 (15 numerical + 2 interface). Browser verifier adds real workbench option enumeration and six-channel Canvas pixel checks.
+
+Live observations: native file chooser loaded rgb.bmp (64x48, 9.1KB); normalized5x5 box filter MSE94.6871/PSNR28.368dB; identity MSE0/PSNRInfinity; non-square and zero-sum normalization blocked. Input608/threshold.70 produced 4 face boxes, scores88.42/78.32/76.24/70.61 percent.
+
+PDF includes full original prompts, output/refinement mapping, six-channel screenshots and requirements/rubric correspondence. Exact AI deployment subversion is unavailable; GPT-6 family is known. No invented version or student debugging prompts are included.
+
+Final browser verifier observed 9/9 PASS on public GitHub Pages. Its initial8/9 failure was an initialization race in the verifier; waiting for image metadata resolved it. Six modes were also selected individually via the actual visible UI.
+
