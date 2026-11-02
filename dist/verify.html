@@ -1,0 +1,12 @@
+<!doctype html><html lang="zh-Hant"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pixel Lab · 瀏覽器驗證</title><link rel="stylesheet" href="styles.css"><body><main><h1>瀏覽器驗證紀錄</h1><p>使用與主程式相同的 Image.decode 與 Canvas 解碼流程，並非模擬格式名稱。</p><ol id="results"></ol><p id="summary">執行中</p><a href="./">返回工作台</a></main><script type="module">
+import {histogram,channel,quality} from './core.mjs';
+const list=document.querySelector('#results');let ok=0,total=0;
+async function run(name,fn){total++;const li=document.createElement('li');try{const value=await fn();li.textContent='PASS / '+name+' / '+value;ok++;}catch(e){li.textContent='FAIL / '+name+' / '+e.message;}list.append(li);}
+async function decode(file){const img=new Image();img.src='qa-fixtures/'+file;await img.decode();const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);return {w:c.width,h:c.height,data:c.getContext('2d').getImageData(0,0,c.width,c.height).data};}
+for(const ext of ['png','jpg','bmp'])await run(ext.toUpperCase()+' 解碼',async()=>{const r=await decode('rgb.'+ext);if(r.w!==64||r.h!==48)throw Error('尺寸錯誤');return r.w+'×'+r.h+'，首像素 RGB '+[...r.data.slice(0,3)];});
+await run('透明 PNG',async()=>{const r=await decode('alpha.png');if(r.data[3]!==90)throw Error('alpha 不一致');return 'alpha=90';});
+await run('大圖與縮放計算',async()=>{const r=await decode('large.png'),s=1600/Math.max(r.w,r.h);return `${r.w}×${r.h} → ${Math.round(r.w*s)}×${Math.round(r.h*s)}`;});
+await run('損毀圖片應拒絕',async()=>{try{await decode('broken.png');}catch{return 'Image.decode 正確拒絕';}throw Error('未拒絕');});
+await run('七種模式與直方圖',async()=>{const r=await decode('rgb.png');for(const m of ['original','R','G','B','Y','U','V']){const out=channel(r.data,m);if(out.length!==r.data.length)throw Error('通道尺寸錯誤');for(const h of histogram(r.data,m))if(h.reduce((a,b)=>a+b,0)!==64*48)throw Error('像素總數錯誤');}return '7/7，各曲線共 3072 像素';});
+document.querySelector('#summary').textContent=`${ok}/${total} PASS`;
+</script></body></html>
