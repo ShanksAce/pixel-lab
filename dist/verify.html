@@ -8,5 +8,9 @@ await run('透明 PNG',async()=>{const r=await decode('alpha.png');if(r.data[3]!
 await run('大圖與縮放計算',async()=>{const r=await decode('large.png'),s=1600/Math.max(r.w,r.h);return `${r.w}×${r.h} → ${Math.round(r.w*s)}×${Math.round(r.h*s)}`;});
 await run('損毀圖片應拒絕',async()=>{try{await decode('broken.png');}catch{return 'Image.decode 正確拒絕';}throw Error('未拒絕');});
 await run('七種模式與直方圖',async()=>{const r=await decode('rgb.png');for(const m of ['original','R','G','B','Y','U','V']){const out=channel(r.data,m);if(out.length!==r.data.length)throw Error('通道尺寸錯誤');for(const h of histogram(r.data,m))if(h.reduce((a,b)=>a+b,0)!==64*48)throw Error('像素總數錯誤');}return '7/7，各曲線共 3072 像素';});
+let frame;
+await run('實際工作台的通道選單',async()=>{frame=document.createElement('iframe');frame.style.display='none';const ready=new Promise(resolve=>frame.onload=resolve);frame.src='./';document.body.append(frame);await ready;const options=[...frame.contentDocument.querySelector('#channel').options].map(o=>o.value);if(options.join(',')!=='original,R,G,B,Y,U,V')throw Error('通道選項缺漏');return 'Original / R / G / B / Y / U / V 均可選取';});
+await run('實際工作台切換與直方圖更新',async()=>{const doc=frame.contentDocument,select=doc.querySelector('#channel');for(const mode of ['R','G','B','Y','U','V']){select.value=mode;select.dispatchEvent(new frame.contentWindow.Event('change'));if(doc.querySelector('#channelTag').textContent!==mode+' CHANNEL'||!doc.querySelector('#histLegend').textContent.startsWith(mode+' /'))throw Error(mode+' 未同步更新');const c=doc.querySelector('#colorCanvas'),pixel=c.getContext('2d').getImageData(0,0,1,1).data;const expected=channel(new Uint8ClampedArray([233,229,218,255]),mode)[0];if(pixel[0]!==expected||pixel[1]!==expected||pixel[2]!==expected)throw Error(mode+' 顯示像素錯誤');}return '6/6，Canvas 實際像素與直方圖標示同步';});
+if(frame)frame.remove();
 document.querySelector('#summary').textContent=`${ok}/${total} PASS`;
 </script></body></html>
