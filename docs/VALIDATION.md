@@ -60,3 +60,6 @@ Final browser verifier observed 9/9 PASS on public GitHub Pages. Its initial8/9 
 
 Follow-up: user confirmed the download reached Desktop. Inspected the actual pixel-lab-detections.json: threshold0.7/inputSize608/count4/faces.length4, dimensions1366x768, matching the real inference. The download-event observer timed out, but the end-to-end file download itself is now verified. Saved the built-in sample export in docs/final-audit/real-detections.json.
 
+
+Post-publication check found mixed browser cache versions on GitHub Pages: new verifier with old app assets. Added an app module release query and a verifier iframe release query so published verification cannot silently exercise a cached previous workbench.
+
