@@ -32,8 +32,8 @@ npm start
 npm test
 ```
 
-17 項 Node.js 原生測試（15 項數值、2 項介面）覆蓋已知數值、直方圖總量、非對稱卷積、邊界與防呆。
-瀏覽器實測詳見 `docs/VALIDATION.md`。測試工具無額外套件。
+19 項 Node.js 原生測試（15 項數值、2 項介面、2 項載入狀態）覆蓋已知數值、直方圖總量、非對稱卷積、邊界與防呆。
+`verify.html` 提供 15 項瀏覽器回歸測試；其中兩項人臉狀態測試使用替身模型，真實模型另外實測。詳見 `docs/VALIDATION.md`。測試工具無額外套件。
 
 ## 檔案
 
@@ -70,3 +70,7 @@ face-api.js / 模型：https://github.com/justadudewhohacks/face-api.js （MIT�
 自撰程式以 MIT 授權，見 LICENSE。若改作商業用途，請改用有適當授權的測試照片。
 
 
+
+## 最後複核改善（2026-11-07）
+
+快速切換圖片採最後選擇優先；改動參數即清除舊 PSNR／人臉結果，過期運算不套用。人臉 JSON 包含實際 threshold、inputSize、原始與運算尺寸。沒有新增相依套件。

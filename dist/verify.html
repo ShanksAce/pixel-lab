@@ -11,6 +11,84 @@ await run('七種模式與直方圖',async()=>{const r=await decode('rgb.png');f
 let frame;
 await run('實際工作台的通道選單',async()=>{frame=document.createElement('iframe');frame.style.display='none';const ready=new Promise(resolve=>frame.onload=resolve);frame.src='./';document.body.append(frame);await ready;for(let n=0;!frame.contentDocument.querySelector('#metadata dd')&&n<100;n++)await new Promise(resolve=>setTimeout(resolve,50));if(!frame.contentDocument.querySelector('#metadata dd'))throw Error('工作台圖片初始化逾時');const options=[...frame.contentDocument.querySelector('#channel').options].map(o=>o.value);if(options.join(',')!=='original,R,G,B,Y,U,V')throw Error('通道選項缺漏');return 'Original / R / G / B / Y / U / V 均可選取';});
 await run('實際工作台切換與直方圖更新',async()=>{const doc=frame.contentDocument,select=doc.querySelector('#channel');for(const mode of ['R','G','B','Y','U','V']){select.value=mode;select.dispatchEvent(new frame.contentWindow.Event('change'));if(doc.querySelector('#channelTag').textContent!==mode+' CHANNEL'||!doc.querySelector('#histLegend').textContent.startsWith(mode+' /'))throw Error(mode+' 未同步更新');const c=doc.querySelector('#colorCanvas'),pixel=c.getContext('2d').getImageData(0,0,1,1).data;const expected=channel(new Uint8ClampedArray([233,229,218,255]),mode)[0];if(pixel[0]!==expected||pixel[1]!==expected||pixel[2]!==expected)throw Error(mode+' 顯示像素錯誤');}return '6/6，Canvas 實際像素與直方圖標示同步';});
+async function until(check,label,timeout=10000){const start=performance.now();while(!check()){if(performance.now()-start>timeout)throw Error(label+' 逾時');await new Promise(resolve=>setTimeout(resolve,20));}}
+function change(doc,id,value,event='change'){const element=doc.getElementById(id);element.value=value;element.dispatchEvent(new frame.contentWindow.Event(event));}
+await run('快速切換範例時以最後選擇為準',async()=>{
+ const win=frame.contentWindow,doc=frame.contentDocument,originalFetch=win.fetch;
+ const photo=await (await fetch('samples/group.jpg')).blob();let release;
+ const delayed=new Promise(resolve=>release=resolve);
+ win.fetch=(input,...args)=>String(input)==='samples/group.jpg'?delayed:originalFetch.call(win,input,...args);
+ let pending;
+ try{
+  doc.querySelector('[data-tab="color"]').click();pending=doc.getElementById('sampleFace').onclick();
+  await doc.getElementById('sampleColor').onclick();
+  release(new win.Response(photo,{status:200}));await pending;
+  if(doc.querySelector('#metadata dd').textContent!=='色彩測試圖.png'||doc.getElementById('color').hidden)throw Error('舊請求覆寫最後選擇');
+  return '延後的多人臉請求不覆寫色彩圖，也不切走分頁';
+ }finally{release(new win.Response(photo,{status:200}));win.fetch=originalFetch;if(pending)await pending;}
+});
+await run('修改濾波參數與無效重算會清除舊結果',async()=>{
+ const doc=frame.contentDocument;doc.querySelector('[data-tab="filter"]').click();
+ change(doc,'preset','identity');doc.getElementById('applyFilter').click();
+ await until(()=>!doc.getElementById('downloadFilter').disabled,'單位矩陣濾波');
+ if(doc.getElementById('psnr').textContent!=='∞ dB')throw Error('單位矩陣結果錯誤');
+ change(doc,'bias','10','input');
+ if(!doc.getElementById('downloadFilter').disabled||doc.getElementById('psnr').textContent!=='—')throw Error('編輯後仍顯示舊 PSNR');
+ change(doc,'kernel','1 2 3\n4 5 6','input');doc.getElementById('applyFilter').click();
+ if(doc.getElementById('kernelError').hidden||!doc.getElementById('downloadFilter').disabled)throw Error('無效矩陣仍允許下載舊結果');
+ return '參數改變即停用舊下載，錯誤矩陣不沿用舊數據';
+});
+await run('濾波運算途中改參數會丟棄過期回應',async()=>{
+ const win=frame.contentWindow,doc=frame.contentDocument,proto=win.Worker.prototype,post=proto.postMessage;
+ let completed;
+ const response=new Promise(resolve=>completed=resolve);
+ proto.postMessage=function(message,...args){this.addEventListener('message',event=>{if(event.data.id===message.id)completed();},{once:true});return post.call(this,message,...args);};
+ try{
+  change(doc,'preset','identity');doc.getElementById('applyFilter').click();
+  change(doc,'bias','20','input');
+  await Promise.race([response,new Promise((_,reject)=>setTimeout(()=>reject(Error('Worker 回應逾時')),10000))]);
+  if(!doc.getElementById('downloadFilter').disabled||doc.getElementById('psnr').textContent!=='—')throw Error('舊 Worker 結果重新出現');
+  return '實際 Worker 已回應，但過期結果未套用';
+ }finally{proto.postMessage=post;}
+});
+function faceStub(detect){return {tf:{setBackend:async()=>{},ready:async()=>{}},nets:{tinyFaceDetector:{loadFromUri:async()=>{}}},TinyFaceDetectorOptions:class{constructor(options){Object.assign(this,options);}},detectAllFaces:detect};}
+const mockFace={score:.9,box:{x:20,y:20,width:50,height:50}};
+await run('人臉 JSON 保留實際執行參數（模型替身）',async()=>{
+ const win=frame.contentWindow,doc=frame.contentDocument,originalApi=win.faceapi,makeUrl=win.URL.createObjectURL,anchorClick=win.HTMLAnchorElement.prototype.click;
+ let exported;
+ try{
+  win.faceapi=faceStub(async()=>[mockFace]);doc.querySelector('[data-tab="face"]').click();
+  change(doc,'threshold','0.5','input');change(doc,'inputSize','320');await doc.getElementById('detect').onclick();
+  if(doc.getElementById('downloadJson').disabled)throw Error('替身推論未產生結果');
+  win.URL.createObjectURL=blob=>{exported=blob;return 'blob:pixel-lab-test';};win.HTMLAnchorElement.prototype.click=function(){};
+  doc.getElementById('downloadJson').click();const data=JSON.parse(await exported.text());
+  if(data.threshold!==.5||data.inputSize!==320||data.count!==1||data.faces.length!==1)throw Error('匯出參數和執行時不一致');
+  change(doc,'threshold','0.65','input');
+  if(!doc.getElementById('downloadJson').disabled||doc.getElementById('faceCount').textContent!=='—')throw Error('改門檻後舊人臉結果未清除');
+  return 'JSON 有 threshold/inputSize/數量；改參數後需重新偵測';
+ }finally{win.faceapi=originalApi;win.URL.createObjectURL=makeUrl;win.HTMLAnchorElement.prototype.click=anchorClick;}
+});
+await run('人臉推論途中改參數會丟棄舊結果（模型替身）',async()=>{
+ const win=frame.contentWindow,doc=frame.contentDocument,originalApi=win.faceapi;let release,pending;
+ try{
+  win.faceapi=faceStub(()=>new Promise(resolve=>release=resolve));pending=doc.getElementById('detect').onclick();
+  await until(()=>typeof release==='function','替身推論開始');change(doc,'inputSize','608');release([mockFace]);await pending;
+  if(!doc.getElementById('downloadJson').disabled||doc.getElementById('faceCount').textContent!=='—')throw Error('過期人臉結果重新出現');
+  return '舊推論完成後不會冒充新設定的結果';
+ }finally{if(release)release([]);if(pending)await pending;win.faceapi=originalApi;}
+});
+await run('實際選檔處理器讀取 PNG/JPG/BMP',async()=>{
+ const win=frame.contentWindow,doc=frame.contentDocument;
+ for(const ext of ['png','jpg','bmp']){
+  const name='picker-test.'+ext,blob=await (await fetch('qa-fixtures/rgb.'+ext)).blob();
+  const transfer=new win.DataTransfer();transfer.items.add(new win.File([blob],name,{type:blob.type}));
+  const input=doc.getElementById('file');input.files=transfer.files;input.dispatchEvent(new win.Event('change'));
+  await until(()=>doc.querySelector('#metadata dd')?.textContent===name,'讀取 '+ext);
+  const dimensions=doc.querySelectorAll('#metadata dd')[1].textContent;
+  if(dimensions!=='64 × 48')throw Error(ext+' 尺寸不正確');
+ }
+ return '三種檔案均經主頁選檔事件處理器載入，尺寸 64×48';
+});
 if(frame)frame.remove();
 document.querySelector('#summary').textContent=`${ok}/${total} PASS`;
 </script></body></html>

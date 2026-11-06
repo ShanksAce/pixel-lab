@@ -48,3 +48,15 @@ PDF includes full original prompts, output/refinement mapping, six-channel scree
 
 Final browser verifier observed 9/9 PASS on public GitHub Pages. Its initial8/9 failure was an initialization race in the verifier; waiting for image metadata resolved it. Six modes were also selected individually via the actual visible UI.
 
+
+## Final continuation review / 2026-11-07
+
+- Node: 19/19 PASS (15 numerical, 2 interface, 2 production-loader controlled-completion tests).
+- Browser: 15/15 PASS, including the real workbench's last-selection race, stale filter edit and real Worker response discard, actual PNG/JPG/BMP File input event handlers.
+- Two face-state/JSON tests use an explicitly labelled model double; these verify state/provenance, not detector accuracy. A separate fresh-page real Tiny Face Detector run on group.jpg at608/.70 returned4 faces with scores88.42%,78.31%,76.23%,70.60%, inference4881.4ms.
+- The browser download-event automation timed out when testing the real JSON download. The authored browser test verifies generated JSON payload and trigger handling; end-to-end OS download observation is not claimed as passed.
+- Existing numerical algorithms and model weights were not changed. No new runtime dependencies.
+- Report's source-file table, model metadata, reviewer attribution and screenshot crops were corrected. User-requested redactions remain removed from the PDF. Historical counts above describe earlier runs; this section is the latest result.
+
+Follow-up: user confirmed the download reached Desktop. Inspected the actual pixel-lab-detections.json: threshold0.7/inputSize608/count4/faces.length4, dimensions1366x768, matching the real inference. The download-event observer timed out, but the end-to-end file download itself is now verified. Saved the built-in sample export in docs/final-audit/real-detections.json.
+
